@@ -10,6 +10,7 @@ from data import *
 
 import av
 from turn import get_ice_servers
+from streamlit_session_memo import st_session_memo
 
 def image_input(style_model_name):
     style_model_path = style_models_dict[style_model_name]
@@ -42,14 +43,11 @@ def webcam_input(style_model_name):
     WIDTH = st.sidebar.select_slider('QUALITY (May reduce the speed)', list(range(150, 501, 50)))
     width = WIDTH
 
-    model_key = f"{style_model_name}-{width}"  # `width` is not used when loading the model, but is necessary as a cache key.
-    if model_key in st.session_state:
-        model = st.session_state[model_key]
-    else:
-        style_model_path = style_models_dict[style_model_name]
-        model = get_model_from_path(style_model_path)
-        st.session_state[model_key] = model
+    @st_session_memo
+    def load_model(model_name, width):  # `width` is not used when loading the model, but is necessary as a cache key.
+        return get_model_from_path(model_name)
 
+    model = load_model(style_models_dict[style_model_name], width)
 
     def video_frame_callback(frame: av.VideoFrame) -> av.VideoFrame:
         image = frame.to_ndarray(format="bgr24")
